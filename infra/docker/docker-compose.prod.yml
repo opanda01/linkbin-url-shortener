@@ -6,22 +6,27 @@ services:
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
     volumes:
       - redis-data:/data
-    # Dışa açma — sadece internal network üzerinden erişilir
     expose:
       - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY}/api:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/linkbin-api:latest
     container_name: linkbin-api
     restart: unless-stopped
-    env_file: ./apps/api/.env.prod
+    env_file: ../../apps/api/.env.prod
     expose:
       - "3001"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY}/web:latest
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/linkbin-web:latest
     container_name: linkbin-web
     restart: unless-stopped
     expose:
@@ -36,8 +41,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../../infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
@@ -48,3 +54,4 @@ volumes:
   redis-data:
   caddy-data:
   caddy-config:
+

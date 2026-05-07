@@ -1,0 +1,42 @@
+# Linkbin — Caddy Reverse Proxy
+#
+# Production: Replace "yourdomain.com" with your actual domain.
+# Caddy will automatically obtain and renew TLS certificates via Let's Encrypt.
+#
+# Local testing without a domain:
+#   caddy run --config Caddyfile --adapter caddyfile
+#   (Caddy will use a self-signed cert on localhost)
+
+yourdomain.com {
+    # API routes — short code redirects and API endpoints
+    @api {
+        path /api/*
+        path /health
+        path /ready
+    }
+    handle @api {
+        reverse_proxy api:3001
+    }
+
+    # Short code pattern: 2–32 alphanumeric, underscore, hyphen
+    @shortcode path_regexp shortcode ^/([a-zA-Z0-9_-]{2,32})$
+    handle @shortcode {
+        reverse_proxy api:3001
+    }
+
+    # Everything else — React SPA
+    handle {
+        reverse_proxy web:80
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Redirect www → apex
+www.yourdomain.com {
+    redir https://yourdomain.com{uri} permanent
+}

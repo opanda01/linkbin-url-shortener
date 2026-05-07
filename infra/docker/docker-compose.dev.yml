@@ -7,6 +7,42 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile.dev
+    container_name: linkbin-api
+    ports:
+      - "3001:3001"
+    env_file:
+      - ../../apps/api/.env
+    volumes:
+      - ../../apps/api/src:/app/src:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile.dev
+    container_name: linkbin-web
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    volumes:
+      - ../../apps/web/src:/app/src:ro
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   redis-data:
