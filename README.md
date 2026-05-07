@@ -1,53 +1,75 @@
 # Linkbin
 
-**Linklerinizi kısaltın, paylaşın, takip edin.**
+Linkbin is a self-hosted URL shortening service. It converts long, unwieldy links into short, memorable URLs and tracks how they perform over time.
 
-Linkbin, uzun ve karmaşık URL'leri kısa ve akılda kalıcı bağlantılara dönüştüren bir web uygulamasıdır.
+## Overview
 
-### Ne yapabilirsiniz?
+When you paste a URL into Linkbin, it generates a short code — for example, `linkbin.io/launch` — that redirects anyone who visits it to the original address. You can choose your own custom slug, or let the system generate one automatically. Every link records daily click statistics so you can see exactly when and how often it is being visited.
 
-- 🔗 Uzun bir linki kısaltıp paylaşabilirsiniz
-- 🏷️ Kendi özel adınızı seçebilirsiniz (`linkbin.io/benim-linkim` gibi)
-- 📊 Linkinize kaç kez tıklandığını, hangi günlerde daha fazla ziyaret aldığını görebilirsiniz
-- ⏳ Linkler 30 gün sonra otomatik silinir
+Links expire after 30 days and are removed automatically, keeping the system clean without any manual maintenance.
+
+## Key Features
+
+- **URL shortening** — Paste any valid HTTP or HTTPS link and receive a short URL instantly.
+- **Custom aliases** — Optionally specify a memorable name for your link instead of a generated code.
+- **Click analytics** — View total clicks and a daily breakdown chart for any shortened link.
+- **Rate limiting** — Each client is limited to 60 requests per 15-minute window to prevent abuse.
+- **Automatic expiry** — Links and their associated data are removed from Redis after 30 days.
+
+## Architecture
+
+The project is structured as a monorepo with two applications and shared infrastructure.
+
+```
+apps/
+  api/    — Node.js HTTP server (no framework), Redis-backed, fully tested
+  web/    — React + Vite single-page application with Tailwind CSS
+infra/
+  docker/ — Docker Compose files for local development and production
+  caddy/  — Reverse proxy configuration
+  scripts/— Smoke tests and utilities
+packages/ — Shared utilities (in progress)
+```
+
+The API is intentionally built without an application framework to demonstrate a clear understanding of the Node.js HTTP layer. All routing, error handling, and middleware behaviour is implemented directly.
+
+The CI/CD pipeline runs on GitHub Actions. Every push triggers the full test suite; merges to `main` additionally build and push Docker images to the GitHub Container Registry and optionally deploy to a production server over SSH.
 
 ---
 
----
+## Developer Guide
 
-## Teknik Detaylar
+> The sections below are intended for contributors and operators running the project locally or in production.
 
-> Aşağıdaki bölümler projeyi geliştirmek veya kendi sunucunuzda çalıştırmak isteyenler içindir.
-
-## Geliştirme Ortamı
+## Local Development
 
 ```bash
-# Bağımlılıkları kur
+# Install dependencies
 npm install
 
-# Redis'i başlat
+# Start Redis
 cd infra/docker && docker compose -f docker-compose.dev.yml up -d
 
-# API'yi başlat (port 3001)
+# Start the API (port 3001)
 npm run dev:api
 
-# Web'i başlat (port 5173)
+# Start the web app (port 5173)
 npm run dev:web
 ```
 
-## Testler
+## Tests
 
 ```bash
-# Tüm testler
+# All tests
 npm test
 
-# Sadece API (11 test)
+# API only (25 tests)
 npm run test:api
 
-# Sadece web (18 test)
+# Web only (18 tests)
 npm run test:web
 
-# Smoke test (API ayaktayken)
+# Smoke test against a running API
 npm run smoke
 ```
 
@@ -57,56 +79,54 @@ npm run smoke
 # API image
 docker build -t linkbin-api apps/api
 
-# Web image (VITE_API_URL gerekli)
+# Web image (requires VITE_API_URL at build time)
 docker build --build-arg VITE_API_URL=https://yourdomain.com -t linkbin-web apps/web
 ```
 
 ## CI / CD
 
-Her `main`/`master` push'unda GitHub Actions otomatik olarak:
+Every push to `main` or `master` runs three sequential jobs via GitHub Actions:
 
-1. **Test** — API (Redis service container ile) + Web testleri + web build kontrolü
-2. **Docker Build & Push** — `ghcr.io/<owner>/linkbin-api:latest` ve `ghcr.io/<owner>/linkbin-web:latest`
-3. **Deploy** — SSH ile sunucuya bağlan, `docker compose pull && up`
+1. **Test** — full test suite with a Redis service container, plus a production build check
+2. **Docker** — builds and pushes both images to the GitHub Container Registry (`ghcr.io`)
+3. **Deploy** — connects to the production server over SSH and runs `docker compose pull && up`
 
-### Gerekli GitHub Secrets
+The deploy job only runs when the repository variable `DEPLOY_ENABLED` is set to `true`, making it safe to push without a production server configured.
 
-| Secret | Açıklama |
+### Required Secrets
+
+| Secret | Description |
 |---|---|
-| `DEPLOY_HOST` | Sunucu IP veya hostname |
-| `DEPLOY_USER` | SSH kullanıcı adı |
-| `DEPLOY_KEY` | SSH private key (ed25519 önerilir) |
-| `VITE_API_URL` | Prod API URL'i (ör: `https://api.yourdomain.com`) |
+| `DEPLOY_HOST` | Production server IP or hostname |
+| `DEPLOY_USER` | SSH username |
+| `DEPLOY_KEY` | SSH private key (ed25519 recommended) |
+| `VITE_API_URL` | Production API base URL (e.g. `https://api.yourdomain.com`) |
 
-> `GITHUB_TOKEN` otomatik sağlanır, ek ayar gerekmez.
+`GITHUB_TOKEN` is provided automatically by GitHub Actions and requires no configuration.
 
-**Deploy'u aktif etmek için** GitHub → Settings → Variables → `DEPLOY_ENABLED = true` ekle.  
-Bu variable olmadan test + docker build çalışır, deploy job atlanır.
-
-### Sunucu Kurulumu (ilk kez)
+### First-time Server Setup
 
 ```bash
-# Sunucuda
 mkdir -p /opt/linkbin
 cd /opt/linkbin
 git clone <repo> .
 cp apps/api/.env.example apps/api/.env.prod
-# .env.prod dosyasını düzenle
+# Edit .env.prod with production values
 ```
 
-## Ortam Değişkenleri
+## Environment Variables
 
-`apps/api/.env.example` dosyasını kopyala:
+Copy the example file before running locally:
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 ```
 
-| Değişken | Varsayılan | Açıklama |
+| Variable | Default | Description |
 |---|---|---|
-| `PORT` | `3001` | API portu |
-| `REDIS_URL` | `redis://localhost:6379` | Redis bağlantı URL'i |
-| `URL_TTL_SECONDS` | `2592000` | Link ömrü (30 gün) |
-| `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit penceresi (15 dk) |
-| `RATE_LIMIT_MAX` | `60` | Pencere başına max istek |
+| `PORT` | `3001` | API server port |
+| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
+| `URL_TTL_SECONDS` | `2592000` | Link lifetime in seconds (30 days) |
+| `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window in milliseconds (15 min) |
+| `RATE_LIMIT_MAX` | `60` | Maximum requests per window per IP |
 
