@@ -1,0 +1,52 @@
+services:
+  # ── API ────────────────────────────────────────────────────────────────────
+  - type: web
+    name: linkbin-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install
+    startCommand: node src/server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: linkbin-redis
+          property: connectionString
+      - key: URL_TTL_SECONDS
+        value: 2592000
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 60
+      - key: BASE_URL
+        sync: false   # Render dashboard'dan elle gir (örn: https://linkbin-api.onrender.com)
+
+  # ── Web (Static Site) ──────────────────────────────────────────────────────
+  - type: web
+    name: linkbin-web
+    runtime: static
+    rootDir: apps/web
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: VITE_API_URL
+        sync: false   # Render dashboard'dan elle gir (örn: https://linkbin-api.onrender.com)
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# ── Redis ───────────────────────────────────────────────────────────────────
+databases:
+  - type: redis
+    name: linkbin-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
