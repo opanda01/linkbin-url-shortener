@@ -47,6 +47,7 @@ function createShortenerService() {
         code,
         url: payload.url,
         shortPath: `/${code}`,
+        shortUrl: `${env.BASE_URL}/${code}`,
         createdAt
       });
     },

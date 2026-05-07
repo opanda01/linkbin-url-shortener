@@ -71,6 +71,20 @@ test('/health returns 200', async () => {
   }
 });
 
+test('/ returns API metadata instead of Route not found', async () => {
+  const server = http.createServer(createApp({ shortenerService: createMockShortenerService() }));
+  await listen(server);
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.service, 'linkbin-api');
+  } finally {
+    await close(server);
+  }
+});
+
 test('/ready returns 200 when service is healthy', async () => {
   const server = http.createServer(createApp({ shortenerService: createMockShortenerService() }));
   await listen(server);

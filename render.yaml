@@ -44,8 +44,7 @@ services:
         source: /*
         destination: /index.html
 
-# ── Redis ───────────────────────────────────────────────────────────────────
-databases:
+  # ── Redis ───────────────────────────────────────────────────────────────────
   - type: redis
     name: linkbin-redis
     plan: free

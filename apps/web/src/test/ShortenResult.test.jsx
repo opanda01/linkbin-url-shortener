@@ -6,13 +6,14 @@ const mockData = {
   code: 'abc123',
   url: 'https://example.com',
   shortPath: '/abc123',
+  shortUrl: 'https://linkbin-api.example.com/abc123',
   createdAt: new Date().toISOString()
 }
 
 describe('ShortenResult', () => {
   it('kısa URL linkini render eder', () => {
     render(<ShortenResult data={mockData} onReset={vi.fn()} />)
-    expect(screen.getByRole('link', { name: /abc123/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: mockData.shortUrl })).toBeInTheDocument()
   })
 
   it('istatistik linkini render eder', () => {
@@ -36,7 +37,7 @@ describe('ShortenResult', () => {
     fireEvent.click(screen.getByRole('button', { name: /kopyala/i }))
 
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('abc123'))
+      expect(writeText).toHaveBeenCalledWith(mockData.shortUrl)
     })
   })
 

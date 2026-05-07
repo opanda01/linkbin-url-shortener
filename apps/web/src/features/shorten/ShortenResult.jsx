@@ -2,7 +2,7 @@ import { useClipboard } from '../../shared/hooks/useClipboard.js'
 import { Button } from '../../shared/ui/Button.jsx'
 
 export function ShortenResult({ data, onReset }) {
-  const shortUrl = `${window.location.origin}/${data.code}`
+  const shortUrl = data.shortUrl || `${window.location.origin}/${data.code}`
   const { copied, copy } = useClipboard()
 
   return (

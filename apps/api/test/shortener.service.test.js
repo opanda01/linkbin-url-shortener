@@ -86,6 +86,7 @@ test('shorten: geçerli URL başarıyla kısaltılır', async () => {
   assert.ok(r.data.code);
   assert.equal(r.data.url, 'https://github.com');
   assert.ok(r.data.shortPath.startsWith('/'));
+  assert.ok(r.data.shortUrl.endsWith(r.data.shortPath));
   assert.ok(r.data.createdAt);
 });
 

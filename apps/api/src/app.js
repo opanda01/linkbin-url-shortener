@@ -24,6 +24,21 @@ function createApp(options = {}) {
         return;
       }
 
+      if (req.method === 'GET' && url.pathname === '/') {
+        sendJson(res, 200, {
+          ok: true,
+          service: 'linkbin-api',
+          endpoints: {
+            health: '/health',
+            ready: '/ready',
+            shorten: '/api/shorten',
+            stats: '/api/stats/:code',
+            redirect: '/:code'
+          }
+        });
+        return;
+      }
+
       if (req.method === 'GET' && url.pathname === '/health') {
         sendJson(res, 200, { ok: true });
         return;

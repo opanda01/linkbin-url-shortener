@@ -100,7 +100,7 @@ The deploy job only runs when the repository variable `DEPLOY_ENABLED` is set to
 | `DEPLOY_HOST` | Production server IP or hostname |
 | `DEPLOY_USER` | SSH username |
 | `DEPLOY_KEY` | SSH private key (ed25519 recommended) |
-| `VITE_API_URL` | Production API base URL (e.g. `https://api.yourdomain.com`) |
+| `VITE_API_URL` | Production API base URL for the web app (e.g. `https://api.yourdomain.com`) |
 
 `GITHUB_TOKEN` is provided automatically by GitHub Actions and requires no configuration.
 
@@ -125,8 +125,8 @@ cp apps/api/.env.example apps/api/.env
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3001` | API server port |
+| `BASE_URL` | `http://localhost:3001` | Public API base URL used when returning generated short links |
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
 | `URL_TTL_SECONDS` | `2592000` | Link lifetime in seconds (30 days) |
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window in milliseconds (15 min) |
 | `RATE_LIMIT_MAX` | `60` | Maximum requests per window per IP |
-
