@@ -48,4 +48,5 @@ services:
   - type: redis
     name: linkbin-redis
     plan: free
+    ipAllowList: []
     maxmemoryPolicy: allkeys-lru
