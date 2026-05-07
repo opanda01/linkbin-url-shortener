@@ -17,7 +17,7 @@ describe('ShortenResult', () => {
 
   it('istatistik linkini render eder', () => {
     render(<ShortenResult data={mockData} onReset={vi.fn()} />)
-    expect(screen.getByRole('link', { name: /istatistik/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /statistik/i })).toBeInTheDocument()
   })
 
   it('"Yeni kısalt" butonuna tıklayınca onReset çağrılır', () => {
