@@ -1,6 +1,23 @@
 # Linkbin
 
-URL kısaltma servisi — Node.js API + React web frontend, Redis destekli.
+**Linklerinizi kısaltın, paylaşın, takip edin.**
+
+Linkbin, uzun ve karmaşık URL'leri kısa ve akılda kalıcı bağlantılara dönüştüren bir web uygulamasıdır.
+
+### Ne yapabilirsiniz?
+
+- 🔗 Uzun bir linki kısaltıp paylaşabilirsiniz
+- 🏷️ Kendi özel adınızı seçebilirsiniz (`linkbin.io/benim-linkim` gibi)
+- 📊 Linkinize kaç kez tıklandığını, hangi günlerde daha fazla ziyaret aldığını görebilirsiniz
+- ⏳ Linkler 30 gün sonra otomatik silinir
+
+---
+
+---
+
+## Teknik Detaylar
+
+> Aşağıdaki bölümler projeyi geliştirmek veya kendi sunucunuzda çalıştırmak isteyenler içindir.
 
 ## Geliştirme Ortamı
 
