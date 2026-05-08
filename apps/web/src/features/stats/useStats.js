@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { apiClient } from '../../shared/api/client.js'
+import { API_CONFIG_ERROR, apiClient } from '../../shared/api/client.js'
 
 export function useStats(code) {
   const [data, setData] = useState(null)
@@ -12,6 +12,12 @@ export function useStats(code) {
     let cancelled = false
 
     async function fetchStats() {
+      if (API_CONFIG_ERROR) {
+        setError(API_CONFIG_ERROR)
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       setError(null)
       try {

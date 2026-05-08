@@ -1,18 +1,9 @@
-const { mock, test, beforeEach } = require('node:test');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { createShortenerService } = require('../src/services/shortener.service');
 
 // Paylaşılan fake Redis state — her testte sıfırlanır
 let fakeRedis;
-
-// redis.service modülünü service require etmeden ÖNCE mock'la
-mock.module(require.resolve('../src/services/redis.service'), {
-  namedExports: {
-    getRedisClient: () => Promise.resolve(fakeRedis)
-  }
-});
-
-// Mock sonrası require — cached mock üzerinden çalışır
-const { createShortenerService } = require('../src/services/shortener.service');
 
 // ─── Fake Redis factory ───────────────────────────────────────────────────────
 
@@ -54,10 +45,16 @@ beforeEach(() => {
   fakeRedis = makeFakeRedis();
 });
 
+function createTestShortenerService() {
+  return createShortenerService({
+    getRedisClient: async () => fakeRedis
+  });
+}
+
 // ─── shorten() ───────────────────────────────────────────────────────────────
 
 test('shorten: url eksikse 400 döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.shorten({});
   assert.equal(r.ok, false);
   assert.equal(r.statusCode, 400);
@@ -65,7 +62,7 @@ test('shorten: url eksikse 400 döner', async () => {
 });
 
 test('shorten: geçersiz URL formatı 400 döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.shorten({ url: 'not-a-url' });
   assert.equal(r.ok, false);
   assert.equal(r.statusCode, 400);
@@ -73,14 +70,14 @@ test('shorten: geçersiz URL formatı 400 döner', async () => {
 });
 
 test('shorten: ftp:// URL reddedilir', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.shorten({ url: 'ftp://example.com' });
   assert.equal(r.ok, false);
   assert.equal(r.statusCode, 400);
 });
 
 test('shorten: geçerli URL başarıyla kısaltılır', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.shorten({ url: 'https://github.com' });
   assert.equal(r.ok, true);
   assert.ok(r.data.code);
@@ -91,14 +88,14 @@ test('shorten: geçerli URL başarıyla kısaltılır', async () => {
 });
 
 test('shorten: özel alias kullanılır', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.shorten({ url: 'https://example.com', alias: 'my-link' });
   assert.equal(r.ok, true);
   assert.equal(r.data.code, 'my-link');
 });
 
 test('shorten: alias dolu ise 409 döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   await svc.shorten({ url: 'https://a.com', alias: 'taken' });
   const r = await svc.shorten({ url: 'https://b.com', alias: 'taken' });
   assert.equal(r.ok, false);
@@ -106,7 +103,7 @@ test('shorten: alias dolu ise 409 döner', async () => {
 });
 
 test('shorten: 3 karakterden kısa alias yok sayılır, random code üretilir', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.shorten({ url: 'https://x.com', alias: 'ab' });
   assert.equal(r.ok, true);
   // 'ab' geçersiz → random 8-char base64url kodu üretilmeli
@@ -116,14 +113,14 @@ test('shorten: 3 karakterden kısa alias yok sayılır, random code üretilir', 
 // ─── resolve() ───────────────────────────────────────────────────────────────
 
 test('resolve: bilinmeyen kod 404 döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.resolve('notexist');
   assert.equal(r.ok, false);
   assert.equal(r.statusCode, 404);
 });
 
 test('resolve: bilinen kod URL döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   await svc.shorten({ url: 'https://resolve-test.com', alias: 'res1' });
   const r = await svc.resolve('res1');
   assert.equal(r.ok, true);
@@ -133,14 +130,14 @@ test('resolve: bilinen kod URL döner', async () => {
 // ─── stats() ─────────────────────────────────────────────────────────────────
 
 test('stats: bilinmeyen kod 404 döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const r = await svc.stats('ghost');
   assert.equal(r.ok, false);
   assert.equal(r.statusCode, 404);
 });
 
 test('stats: sıfır tıklamayla boş seri döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   await svc.shorten({ url: 'https://stats-test.com', alias: 'stat1' });
   const r = await svc.stats('stat1');
   assert.equal(r.ok, true);
@@ -150,7 +147,7 @@ test('stats: sıfır tıklamayla boş seri döner', async () => {
 });
 
 test('stats: code, url, createdAt, ttlDays alanları mevcut', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   await svc.shorten({ url: 'https://meta-test.com', alias: 'meta1' });
   const r = await svc.stats('meta1');
   assert.equal(r.ok, true);
@@ -163,7 +160,7 @@ test('stats: code, url, createdAt, ttlDays alanları mevcut', async () => {
 // ─── ping() ──────────────────────────────────────────────────────────────────
 
 test('ping: Redis PONG verince true döner', async () => {
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const alive = await svc.ping();
   assert.equal(alive, true);
 });
@@ -172,7 +169,7 @@ test('ping: Redis hata verince false döner', async () => {
   fakeRedis = makeFakeRedis({
     ping: async () => { throw new Error('connection refused'); }
   });
-  const svc = createShortenerService();
+  const svc = createTestShortenerService();
   const alive = await svc.ping().catch(() => false);
   assert.equal(alive, false);
 });

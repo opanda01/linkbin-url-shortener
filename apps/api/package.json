@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "node --test --experimental-test-module-mocks"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

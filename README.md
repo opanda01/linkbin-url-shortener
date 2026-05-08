@@ -2,6 +2,8 @@
 
 Linkbin is a self-hosted URL shortening service. It converts long, unwieldy links into short, memorable URLs and tracks how they perform over time.
 
+**Live site:** https://linkbin-web.onrender.com/
+
 ## Overview
 
 When you paste a URL into Linkbin, it generates a short code — for example, `linkbin.io/launch` — that redirects anyone who visits it to the original address. You can choose your own custom slug, or let the system generate one automatically. Every link records daily click statistics so you can see exactly when and how often it is being visited.
@@ -82,6 +84,19 @@ docker build -t linkbin-api apps/api
 # Web image (requires VITE_API_URL at build time)
 docker build --build-arg VITE_API_URL=https://yourdomain.com -t linkbin-web apps/web
 ```
+
+## Render Deployment
+
+Render deploys the API and web app as separate services, so the static web build must know the public API URL before it is built.
+
+Set these environment variables in the Render dashboard, then trigger a new deploy for the web service:
+
+| Service | Variable | Example |
+|---|---|---|
+| `linkbin-api` | `BASE_URL` | `https://linkbin-api.onrender.com` |
+| `linkbin-web` | `VITE_API_URL` | `https://linkbin-api.onrender.com` |
+
+If `VITE_API_URL` is missing in production, the web app cannot call the API from the browser and will show a configuration error instead of silently trying `localhost:3001`.
 
 ## CI / CD
 

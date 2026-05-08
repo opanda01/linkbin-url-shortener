@@ -22,7 +22,7 @@ services:
       - key: RATE_LIMIT_MAX
         value: 60
       - key: BASE_URL
-        sync: false   # Render dashboard'dan elle gir (örn: https://linkbin-api.onrender.com)
+        sync: false   # Public API URL; dashboard'dan gir ve API'yi yeniden deploy et (örn: https://linkbin-api.onrender.com)
 
   # ── Web (Static Site) ──────────────────────────────────────────────────────
   - type: web
@@ -34,7 +34,7 @@ services:
     pullRequestPreviewsEnabled: true
     envVars:
       - key: VITE_API_URL
-        sync: false   # Render dashboard'dan elle gir (örn: https://linkbin-api.onrender.com)
+        sync: false   # Public API URL; build öncesi dashboard'dan gir ve web'i yeniden deploy et
     headers:
       - path: /assets/*
         name: Cache-Control

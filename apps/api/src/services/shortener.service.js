@@ -12,7 +12,9 @@ const keys = {
   stats: (code) => `stats:${code}`
 };
 
-function createShortenerService() {
+function createShortenerService(options = {}) {
+  const redisClientFactory = options.getRedisClient || getRedisClient;
+
   return {
     async shorten(payload) {
       if (!payload || typeof payload.url !== 'string') {
@@ -24,7 +26,7 @@ function createShortenerService() {
       }
 
       const code = normalizeCode(payload.alias) || createCode();
-      const redis = await getRedisClient();
+      const redis = await redisClientFactory();
 
       // Atomik kontrol: SET NX → null dönerse alias dolu
       const set = await redis.set(keys.url(code), payload.url, {
@@ -53,7 +55,7 @@ function createShortenerService() {
     },
 
     async resolve(code) {
-      const redis = await getRedisClient();
+      const redis = await redisClientFactory();
       const url = await redis.get(keys.url(code));
 
       if (!url) {
@@ -71,7 +73,7 @@ function createShortenerService() {
     },
 
     async stats(code) {
-      const redis = await getRedisClient();
+      const redis = await redisClientFactory();
 
       const [meta, clicks, daily, ttl] = await Promise.all([
         redis.hGetAll(keys.meta(code)),
@@ -106,7 +108,7 @@ function createShortenerService() {
     },
 
     async ping() {
-      const redis = await getRedisClient();
+      const redis = await redisClientFactory();
       const result = await redis.ping();
       return result === 'PONG';
     }
