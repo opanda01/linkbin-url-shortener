@@ -4,6 +4,8 @@ Linkbin is a self-hosted URL shortening service. It converts long, unwieldy link
 
 **Live site:** https://linkbin-web.onrender.com/
 
+> ⚠️ **Note:** The live demo is hosted on Render's free tier. It may take 40-60 seconds to spin up after a period of inactivity. Please be patient during the initial load!
+
 ## Overview
 
 When you paste a URL into Linkbin, it generates a short code — for example, `linkbin.io/launch` — that redirects anyone who visits it to the original address. You can choose your own custom slug, or let the system generate one automatically. Every link records daily click statistics so you can see exactly when and how often it is being visited.
