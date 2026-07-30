@@ -22,7 +22,7 @@
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "redis": "^5.12.1"
+    "redis": "^6.1.0"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^7.0.0",
