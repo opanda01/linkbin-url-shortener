@@ -1,7 +1,6 @@
 name: Dependabot auto-merge
 
-# Yalnızca dependabot[bot] PR'ları; CI / CD başarılı + semver patch/minor ise squash merge.
-# Major güncellemeler ve dış katkı PR'ları otomatik birleştirilmez.
+# Dependabot PR'ları: CI / CD başarılı + patch/minor → squash merge.
 
 on:
   pull_request:
@@ -14,8 +13,10 @@ permissions:
 jobs:
   auto-merge:
     name: Merge Dependabot PR after CI
+    if: |
+      github.event.pull_request.user.login == 'app/dependabot' ||
+      github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
 
     steps:
       - name: Dependabot metadata
@@ -26,8 +27,7 @@ jobs:
 
       - name: Log skipped major updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-major'
-        run: |
-          echo "Major semver update — requires manual review; not auto-merging."
+        run: echo "Major semver update — manual review required."
 
       - name: Wait for CI / CD
         if: |
@@ -41,10 +41,26 @@ jobs:
           wait-interval: 30
           allowed-conclusions: success
 
-      - name: Squash-merge patch/minor Dependabot PR
+      - name: Update branch and squash-merge
         if: |
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
           steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: gh pr merge --squash "${{ github.event.pull_request.number }}"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            try {
+              await github.rest.pulls.updateBranch({ owner, repo, pull_number });
+            } catch (e) {
+              core.info(`updateBranch: ${e.message}`);
+            }
+
+            await github.rest.pulls.merge({
+              owner,
+              repo,
+              pull_number,
+              merge_method: 'squash',
+            });
