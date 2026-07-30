@@ -1,14 +1,26 @@
 # Linkbin
 
+[![CI / CD](https://github.com/opanda01/linkbin-url-shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/opanda01/linkbin-url-shortener/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-43_passing-brightgreen)](https://github.com/opanda01/linkbin-url-shortener/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/badge/node-22.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-linkbin--web.onrender.com-8b5cf6?style=for-the-badge&logo=googlechrome&logoColor=white)](https://linkbin-web.onrender.com/)
+
 Linkbin is a self-hosted URL shortening service. It converts long, unwieldy links into short, memorable URLs and tracks how they perform over time.
 
-**Live site:** https://linkbin-web.onrender.com/
+<p align="center">
+  <img src="docs/readme/shorten-form.png" alt="Paste a long URL and optional custom alias" width="32%" />
+  <img src="docs/readme/shorten-result.png" alt="Copy the generated short link" width="32%" />
+  <img src="docs/readme/analytics.png" alt="Daily click analytics chart" width="32%" />
+</p>
 
-> ⚠️ **Note:** The live demo is hosted on Render's free tier. It may take 40-60 seconds to spin up after a period of inactivity. Please be patient during the initial load!
+> ⚠️ **Note:** The live demo is hosted on Render's free tier. It may take 40–60 seconds to spin up after a period of inactivity. Please be patient during the initial load!
 
 ## Overview
 
-When you paste a URL into Linkbin, it generates a short code — for example, `linkbin.io/launch` — that redirects anyone who visits it to the original address. You can choose your own custom slug, or let the system generate one automatically. Every link records daily click statistics so you can see exactly when and how often it is being visited.
+When you paste a URL into Linkbin, it generates a short code — for example, [`linkbin-web.onrender.com/launch`](https://linkbin-web.onrender.com/launch) on the [live demo](https://linkbin-web.onrender.com/) — that redirects anyone who visits it to the original address. When you self-host behind your own domain, the same path looks like `yourdomain.com/launch`; names like `linkbin.io` are only illustrative of that pattern.
+
+You can choose your own custom slug, or let the system generate one automatically. Every link records daily click statistics so you can see exactly when and how often it is being visited.
 
 Links expire after 30 days and are removed automatically, keeping the system clean without any manual maintenance.
 
@@ -32,12 +44,13 @@ infra/
   docker/ — Docker Compose files for local development and production
   caddy/  — Reverse proxy configuration
   scripts/— Smoke tests and utilities
-packages/ — Shared utilities (in progress)
 ```
 
 The API is intentionally built without an application framework to demonstrate a clear understanding of the Node.js HTTP layer. All routing, error handling, and middleware behaviour is implemented directly.
 
-The CI/CD pipeline runs on GitHub Actions. Every push triggers the full test suite; merges to `main` additionally build and push Docker images to the GitHub Container Registry and optionally deploy to a production server over SSH.
+The CI/CD pipeline runs on GitHub Actions. Every push triggers the full test suite; merges to `main` or `master` additionally build and push Docker images to the GitHub Container Registry and optionally deploy to a production server over SSH.
+
+To refresh the README screenshots after UI changes, run `npx playwright install chromium` once, then `node infra/scripts/capture-readme-screenshots.mjs` (defaults to the live demo; pass a local base URL as the first argument if you prefer).
 
 ---
 
