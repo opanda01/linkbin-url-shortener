@@ -1,56 +1,66 @@
 name: Dependabot auto-merge
 
-# CI / CD yeşil olduktan sonra yalnızca dependabot[bot] PR'larını birleştirir.
-# Dışarıdan gelen (fork / contributor) PR'lara dokunmaz.
+# Dependabot PR'ları: CI / CD başarılı + patch/minor → squash merge.
 
 on:
-  workflow_run:
-    workflows: ["CI / CD"]
-    types:
-      - completed
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  merge:
+  auto-merge:
     name: Merge Dependabot PR after CI
+    if: |
+      github.event.pull_request.user.login == 'app/dependabot' ||
+      github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request'
-
-    permissions:
-      contents: write
-      pull-requests: write
 
     steps:
-      - name: Squash-merge open Dependabot PR for this commit
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log skipped major updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: echo "Major semver update — manual review required."
+
+      - name: Wait for CI / CD
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        uses: lewagon/wait-on-check-action@v1.11.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          running-workflow-name: CI / CD
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+      - name: Update branch and squash-merge
+        if: |
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
-            const sha = context.payload.workflow_run.head_sha;
+            const pull_number = context.payload.pull_request.number;
 
-            const { data: prs } =
-              await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner,
-                repo,
-                commit_sha: sha,
-              });
-
-            const dependabotPr = prs.find(
-              (pr) => pr.user?.login === 'dependabot[bot]' && pr.state === 'open'
-            );
-
-            if (!dependabotPr) {
-              core.info('No open Dependabot PR linked to this CI run — skipping.');
-              return;
+            try {
+              await github.rest.pulls.updateBranch({ owner, repo, pull_number });
+            } catch (e) {
+              core.info(`updateBranch: ${e.message}`);
             }
-
-            core.info(`Merging Dependabot PR #${dependabotPr.number} (${dependabotPr.title})`);
 
             await github.rest.pulls.merge({
               owner,
               repo,
-              pull_number: dependabotPr.number,
+              pull_number,
               merge_method: 'squash',
             });
