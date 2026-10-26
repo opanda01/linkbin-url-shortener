@@ -21,8 +21,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "redis": "^6.1.0"
+    "dotenv": "^18.0.9",
+    "redis": "^6.3.0"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^7.0.0",
